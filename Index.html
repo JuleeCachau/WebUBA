@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Proyector CPO (UBA Derecho)</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 980px; }
+    h1 { margin: 0 0 8px; }
+    .muted { color: #666; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 14px; background: #fff; }
+    .col6 { grid-column: span 6; } .col12 { grid-column: span 12; }
+    label { display: block; margin: 8px 0 4px; font-weight: 600; }
+    input, select, button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+    button { cursor: pointer; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { text-align: left; border-bottom: 1px solid #eee; padding: 10px 8px; vertical-align: top; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; border: 1px solid #ddd; margin-right: 6px; }
+    .ok { border-color: #9be7a1; background: #f0fff2; }
+    .warn { border-color: #ffd089; background: #fff8ee; }
+    .bad { border-color: #ff9a9a; background: #fff1f1; }
+    .row { display:flex; gap:10px; align-items:center; }
+    .row > * { flex:1; }
+    .small { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Proyector CPO – UBA Derecho</h1>
+  <div class="muted small">
+    Base de reglas según “Nueva guía del CPO” (plan 2004/2008).
+  </div>
+
+  <div class="grid" style="margin-top:16px;">
+    <div class="card col6">
+      <h3 style="margin-top:0;">Perfil</h3>
+
+      <label>Plan</label>
+      <select id="plan">
+        <option value="2004">Plan 2004</option>
+        <option value="2008">Plan 2008</option>
+      </select>
+
+      <label>Orientación</label>
+      <select id="orientacion"></select>
+
+      <label>Materias CPC “blancas” aprobadas</label>
+      <input id="blancas" type="number" min="0" max="30" />
+
+      <label>Materias CPO “negritas” aprobadas</label>
+      <input id="negritas" type="number" min="0" max="20" />
+
+      <div class="row" style="margin-top:12px;">
+        <button id="save">Guardar</button>
+        <button id="reset" title="Borra solo los datos guardados en este navegador">Reset</button>
+      </div>
+
+      <div class="muted small" style="margin-top:10px;">
+        Tip: esto guarda en tu navegador (localStorage). Después se puede agregar “exportar/importar”.
+      </div>
+    </div>
+
+    <div class="card col6">
+      <h3 style="margin-top:0;">Panel</h3>
+      <div id="panel"></div>
+      <hr style="border:none;border-top:1px solid #eee;margin:14px 0;">
+      <div class="muted small">
+        Reglas usadas:
+        <ul>
+          <li>Bimestral 2 pts, cuatrimestral 4 pts.</li>
+          <li>Podés empezar puntos con 12 blancas (Filosofía/Sociales/Procesal).</li>
+          <li>Máximo 16 pts por cuatrimestre y 8 por bimestre.</li>
+          <li>Idioma: todas blancas + 3 negritas. Práctica: 14 blancas + 5 negritas + 20 pts.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card col12">
+      <h3 style="margin-top:0;">Materias de puntos (cargá tus cursadas)</h3>
+
+      <div class="grid">
+        <div class="col6">
+          <label>Materia</label>
+          <input id="m_nombre" placeholder="Ej: Derecho de Daños" />
+        </div>
+        <div class="col3">
+          <label>Tipo</label>
+          <select id="m_tipo">
+            <option value="bimestral">Bimestral (2 pts)</option>
+            <option value="cuatrimestral">Cuatrimestral (4 pts)</option>
+            <option value="mensual">Mensual (1 pt)</option>
+          </select>
+        </div>
+        <div class="col3">
+          <label>Depto</label>
+          <select id="m_depto">
+            <option value="privado">Privado</option>
+            <option value="penal">Penal</option>
+            <option value="laboral">Laboral</option>
+            <option value="publico">Público</option>
+            <option value="empresarial">Económico/Empresarial</option>
+            <option value="tributario">Tributario</option>
+            <option value="procesal">Procesal</option>
+            <option value="filosofia">Filosofía</option>
+            <option value="sociales">Sociales</option>
+            <option value="notarial">Notarial</option>
+          </select>
+        </div>
+
+        <div class="col6">
+          <label>Código de área (opcional)</label>
+          <input id="m_area" placeholder="Ej: DAÑ, CON, MAR..." />
+          <div class="muted small">Sirve para evitar repetir “áreas” que no computan (si aplica).</div>
+        </div>
+        <div class="col3">
+          <label>Aprobada</label>
+          <select id="m_ok">
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div class="col3" style="display:flex;align-items:end;">
+          <button id="add">Agregar</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Materia</th>
+            <th>Depto</th>
+            <th>Puntos</th>
+            <th>Área</th>
+            <th>Aprobada</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const ORIENTACIONES = [
+      { id: "privado", nombre: "Derecho Privado" },
+      { id: "penal", nombre: "Derecho Penal" },
+      { id: "laboral", nombre: "Derecho Laboral" },
+      { id: "int_publico", nombre: "Derecho Internacional Público" },
+      { id: "administrativo", nombre: "Derecho Administrativo" },
+      { id: "tributario", nombre: "Derecho Tributario" },
+      { id: "empresarial", nombre: "Derecho Empresarial" },
+      { id: "notarial", nombre: "Derecho Notarial" },
+    ];
+
+    // Pequeña ayuda: obligatorias de Privado según el PDF (podés ampliar con el resto)
+    const OBLIGATORIAS_POR_ORIENTACION = {
+      privado: ["Derecho de Daños", "Derecho del Consumidor", "Derecho Romano"],
+    };
+
+    const KEY = "cpo_proyector_v1";
+
+    function puntosPorTipo(tipo) {
+      if (tipo === "mensual") return 1;
+      if (tipo === "bimestral") return 2;
+      return 4;
+    }
+
+    function load() {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : {
+        plan: "2004",
+        orientacion: "privado",
+        blancas: 0,
+        negritas: 0,
+        puntos: []
+      };
+    }
+
+    function save(state) {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+
+    function renderOrientaciones(state) {
+      const sel = document.getElementById("orientacion");
+      sel.innerHTML = ORIENTACIONES.map(o => {
+        const s = o.id === state.orientacion ? "selected" : "";
+        return `<option value="${o.id}" ${s}>${o.nombre}</option>`;
+      }).join("");
+    }
+
+    function renderPanel(state) {
+      const totalPts = state.puntos.reduce((acc, m) => acc + (m.ok ? m.puntos : 0), 0);
+      const faltan69 = Math.max(0, 69 - totalPts);
+
+      const puedeEmpezarPuntos = state.blancas >= 12;
+      const puedeIdioma = (state.blancas >= 14) && (state.negritas >= 3);
+      const puedePractica = (state.blancas >= 14) && (state.negritas >= 5) && (totalPts >= 20);
+
+      const oblig = OBLIGATORIAS_POR_ORIENTACION[state.orientacion] || [];
+      const aprobadasOblig = oblig.filter(nombre => state.puntos.some(p => p.ok && p.nombre.trim().toLowerCase() === nombre.toLowerCase()));
+      const faltanOblig = oblig.filter(x => !aprobadasOblig.includes(x));
+
+      const pills = (ok, txt) => `<span class="pill ${ok ? "ok" : "warn"}">${txt}</span>`;
+
+      document.getElementById("panel").innerHTML = `
+        <div style="margin-bottom:10px;">
+          <div><b>Puntos acumulados:</b> ${totalPts}</div>
+          <div><b>Faltan para 69:</b> ${faltan69}</div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          ${pills(puedeEmpezarPuntos, puedeEmpezarPuntos ? "Podés empezar puntos" : "Aún no: necesitás 12 blancas")}
+          ${pills(puedeIdioma, puedeIdioma ? "Idioma habilitable" : "Idioma: todas blancas + 3 negritas")}
+          ${pills(puedePractica, puedePractica ? "Práctica habilitable" : "Práctica: 14 blancas + 5 negritas + 20 pts")}
+        </div>
+
+        ${oblig.length ? `
+          <div class="small">
+            <b>Obligatorias detectadas (orientación):</b><br>
+            ${oblig.map(x => {
+              const ok = aprobadasOblig.includes(x);
+              return `<span class="pill ${ok ? "ok":"bad"}">${ok ? "✔" : "✖"} ${x}</span>`;
+            }).join("")}
+            ${faltanOblig.length ? `<div style="margin-top:8px;"><b>Te faltan:</b> ${faltanOblig.join(", ")}</div>` : ""}
+          </div>
+        ` : `<div class="muted small">Para esta orientación todavía no cargamos el listado de obligatorias en la app (se puede completar).</div>`}
+      `;
+    }
+
+    function renderList(state) {
+      const tbody = document.getElementById("list");
+      tbody.innerHTML = state.puntos.map((m, idx) => `
+        <tr>
+          <td>${escapeHtml(m.nombre)}</td>
+          <td>${escapeHtml(m.depto)}</td>
+          <td>${m.puntos}</td>
+          <td>${escapeHtml(m.area || "")}</td>
+          <td>${m.ok ? "Sí" : "No"}</td>
+          <td><button onclick="removeAt(${idx})">Eliminar</button></td>
+        </tr>
+      `).join("");
+    }
+
+    function escapeHtml(s) {
+      return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+    }
+
+    // Exponer función para el botón "Eliminar"
+    window.removeAt = function(idx) {
+      const state = load();
+      state.puntos.splice(idx, 1);
+      save(state);
+      boot();
+    }
+
+    function boot() {
+      const state = load();
+
+      document.getElementById("plan").value = state.plan;
+      document.getElementById("blancas").value = state.blancas;
+      document.getElementById("negritas").value = state.negritas;
+      renderOrientaciones(state);
+
+      renderPanel(state);
+      renderList(state);
+    }
+
+    document.getElementById("save").addEventListener("click", () => {
+      const state = load();
+      state.plan = document.getElementById("plan").value;
+      state.orientacion = document.getElementById("orientacion").value;
+      state.blancas = Number(document.getElementById("blancas").value || 0);
+      state.negritas = Number(document.getElementById("negritas").value || 0);
+      save(state);
+      boot();
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      localStorage.removeItem(KEY);
+      boot();
+    });
+
+    document.getElementById("add").addEventListener("click", () => {
+      const nombre = document.getElementById("m_nombre").value.trim();
+      if (!nombre) return alert("Poné un nombre de materia.");
+
+      const tipo = document.getElementById("m_tipo").value;
+      const depto = document.getElementById("m_depto").value;
+      const area = document.getElementById("m_area").value.trim();
+      const ok = document.getElementById("m_ok").value === "true";
+      const puntos = puntosPorTipo(tipo);
+
+      const state = load();
+
+      // Validación básica de áreas (si se usa):
+      // No permite 2 aprobadas con el mismo areaCode (salvo que el usuario decida ignorarlo).
+      if (ok && area) {
+        const repetida = state.puntos.some(p => p.ok && p.area && p.area.toLowerCase() === area.toLowerCase());
+        if (repetida) {
+          const seguir = confirm("Ojo: ya tenés una materia aprobada con ese Código de Área. Según la guía, puede no computar. ¿La agrego igual?");
+          if (!seguir) return;
+        }
+      }
+
+      state.puntos.push({ nombre, tipo, depto, area, ok, puntos, ts: Date.now() });
+      save(state);
+
+      document.getElementById("m_nombre").value = "";
+      document.getElementById("m_area").value = "";
+
+      boot();
+    });
+
+    boot();
+  </script>
+</body>
+</html>
