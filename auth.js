@@ -1,6 +1,5 @@
-// auth.js — Registro/Login usando Google Apps Script (Google Sheets)
-// Configurá tu URL del Web App acá:
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIPi_QCbWuKIf9gJtf22jtbymlAFIUk7RuSC_Hfe8cWWydWR2eSzEbs4-PI2Gy6P2GLw/exec";
+// auth.js — Registro/Login + datos usando Google Apps Script (Google Sheets)
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9Pkepfm8zd4daGH_v7bjxI5ZJgS4but7PLO1llg_jHggRlH2j6DqFr3pyi7PRSVR/exec";
 
 // Reglas de password:
 // - mínimo 8
@@ -21,35 +20,49 @@ export async function sha256(text) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function postJson(url, payload) {
-  const res = await fetch(url, {
+// CLAVE: text/plain para evitar preflight CORS en Apps Script
+async function postJson(payload) {
+  const res = await fetch(APPS_SCRIPT_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload),
   });
   const txt = await res.text();
   let data;
-  try { data = JSON.parse(txt); } catch { data = { ok: false, error: "Respuesta no JSON del servidor", raw: txt }; }
+  try { data = JSON.parse(txt); }
+  catch { data = { ok:false, error:"Respuesta no JSON del servidor", raw: txt }; }
   return data;
 }
 
 export async function registerUser(username, password) {
   const u = username.trim();
   const p = password.trim();
-  if (!u) return { ok: false, error: "Ingresá un usuario." };
+  if (!u) return { ok:false, error:"Ingresá un usuario." };
   const err = validatePassword(p);
-  if (err) return { ok: false, error: err };
-
+  if (err) return { ok:false, error: err };
   const password_hash = await sha256(p);
-  return await postJson(APPS_SCRIPT_URL, { action: "register", username: u, password_hash });
+  // devuelve usuario_id
+  return await postJson({ action:"register", username: u, password_hash });
 }
 
 export async function loginUser(username, password) {
   const u = username.trim();
   const p = password.trim();
-  if (!u) return { ok: false, error: "Ingresá un usuario." };
-  if (!p) return { ok: false, error: "Ingresá una contraseña." };
-
+  if (!u) return { ok:false, error:"Ingresá un usuario." };
+  if (!p) return { ok:false, error:"Ingresá una contraseña." };
   const password_hash = await sha256(p);
-  return await postJson(APPS_SCRIPT_URL, { action: "login", username: u, password_hash });
+  // devuelve usuario_id
+  return await postJson({ action:"login", username: u, password_hash });
+}
+
+export async function listMaterias() {
+  return await postJson({ action:"list_materias" });
+}
+
+export async function loadProgress(usuario_id) {
+  return await postJson({ action:"load_progress", usuario_id });
+}
+
+export async function saveProgress(usuario_id, progreso) {
+  return await postJson({ action:"save_progress", usuario_id, progreso });
 }

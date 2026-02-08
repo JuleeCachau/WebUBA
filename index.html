@@ -8,13 +8,13 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #fafafa; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
     h1 { margin: 0 0 8px; }
     .muted { color: #666; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
     .grid { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
     .grid > * { min-width: 0; }
     .card { border: 1px solid #ddd; border-radius: 10px; padding: 14px; background: #fff; }
-    .col6 { grid-column: span 6; } .col12 { grid-column: span 12; } .col4 { grid-column: span 4; } .col3{grid-column:span 3;} .col2{grid-column:span 2;}
+    .col6 { grid-column: span 6; } .col12 { grid-column: span 12; } .col4 { grid-column: span 4; } .col3{grid-column:span 3;} .col2{grid-column:span 2;} .col9 { grid-column: span 9; }
     label { display: block; margin: 8px 0 4px; font-weight: 600; }
     input, select, button { width: 100%; max-width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
     button { cursor: pointer; font-weight: 700; }
@@ -28,16 +28,16 @@
     .row > * { flex:1; min-width: 0; }
     .small { font-size: 13px; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    @media (max-width: 900px) { .col6, .col4, .col3, .col2 { grid-column: span 12; } }
+    @media (max-width: 900px) { .col6, .col4, .col3, .col2, .col9 { grid-column: span 12; } }
   </style>
 </head>
 <body>
-<div class="container">
+  <div class="container">
 
 <div id="authGate" class="card" style="max-width:560px; margin: 24px auto; display:none;">
   <h2 style="margin-top:0;">Ingresar</h2>
   <div class="muted small" style="margin-bottom:10px;">
-    Creá tu usuario o iniciá sesión.
+    Creá tu usuario o iniciá sesión. La contraseña se guarda como <b>hash</b> (no en texto plano).
   </div>
 
   <label>Usuario</label>
@@ -71,7 +71,7 @@
   </div>
 
   <div class="grid" style="margin-top:16px;">
-    <div class="card col6">
+    <div class="card col9">
       <h3 style="margin-top:0;">Perfil</h3>
 
       <label>Plan</label>
@@ -80,11 +80,46 @@
       <label>Orientación</label>
       <select id="orientacion"></select>
 
-      <label>Materias CPC “blancas” aprobadas</label>
-      <input id="blancas" type="number" min="0" max="40" />
+      <h4 style="margin:14px 0 6px;">Materias (checklist)</h4>
+      <div class="muted small">Mové materias entre <b>Pendientes</b> y <b>Aprobadas</b>. Se filtran desde Google Sheets por <span class="mono">Instancia_id</span>.</div>
 
-      <label>Materias CPO “negritas” aprobadas</label>
-      <input id="negritas" type="number" min="0" max="40" />
+      <div class="grid" style="margin-top:10px;">
+        <div class="card col6" style="padding:12px;">
+          <b>CPC</b> <span class="muted small">(Instancia_id = 2)</span>
+          <div class="grid" style="grid-template-columns: 1fr auto 1fr; gap: 10px; margin-top:10px; align-items:center;">
+            <div>
+              <label class="small">Pendientes</label>
+              <select id="cpc_pending" multiple size="10"></select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <button type="button" id="cpc_to_approved" title="Marcar aprobadas">→</button>
+              <button type="button" id="cpc_to_pending" title="Volver a pendientes">←</button>
+            </div>
+            <div>
+              <label class="small">Aprobadas</label>
+              <select id="cpc_approved" multiple size="10"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card col6" style="padding:12px;">
+          <b>CPO</b> <span class="muted small">(Instancia_id = 3)</span>
+          <div class="grid" style="grid-template-columns: 1fr auto 1fr; gap: 10px; margin-top:10px; align-items:center;">
+            <div>
+              <label class="small">Pendientes</label>
+              <select id="cpo_pending" multiple size="10"></select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <button type="button" id="cpo_to_approved" title="Marcar aprobadas">→</button>
+              <button type="button" id="cpo_to_pending" title="Volver a pendientes">←</button>
+            </div>
+            <div>
+              <label class="small">Aprobadas</label>
+              <select id="cpo_approved" multiple size="10"></select>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <label>Puntos ya aprobados (si tenés de antes y no querés cargarlos 1x1)</label>
       <input id="puntosPrevios" type="number" min="0" max="200" />
@@ -99,7 +134,7 @@
       </div>
     </div>
 
-    <div class="card col6">
+    <div class="card col3">
       <h3 style="margin-top:0;">Panel</h3>
       <div id="panel"></div>
       <hr style="border:none;border-top:1px solid #eee;margin:14px 0;">
@@ -189,7 +224,7 @@
 </div>
 
 <script type="module">
-  import { registerUser, loginUser } from "./auth.js";
+  import { registerUser, loginUser, listMaterias, loadProgress, saveProgress } from "./auth.js";
 
   const KEY = "cpo_proyector_v2";
   const SESSION_KEY = "cpo_session_user";
@@ -206,19 +241,101 @@
 
   let DB = null;
   let PLAN = [];
+  let MAT_SHEET = []; // materias desde Google Sheets (materia_id, materia, instancia_id)
 
-  function setSession(username) { localStorage.setItem(SESSION_KEY, JSON.stringify({ username, ts: Date.now() })); }
+  function setSession(username, usuario_id) { localStorage.setItem(SESSION_KEY, JSON.stringify({ username, usuario_id, ts: Date.now() })); }
   function getSession() { const raw = localStorage.getItem(SESSION_KEY); return raw ? JSON.parse(raw) : null; }
   function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
   function loadState() {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : { plan:"2008", orientacion:"penal", blancas:0, negritas:0, puntosPrevios:0, aprobadas:[] };
+    return raw ? JSON.parse(raw) : { plan:"2008", orientacion:"penal", puntosPrevios:0, aprobadas:[], aprobadas_cpc:[], aprobadas_cpo:[] };
   }
   function saveState(state) { localStorage.setItem(KEY, JSON.stringify(state)); }
 
   function esc(s) { return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"); }
   function pointsByType(t) { return (DB?.rules?.points?.[t]) ?? (t === "mensual" ? 1 : t === "bimestral" ? 2 : 4); }
+
+  function normalizeState(state) {
+    state.aprobadas_cpc = Array.isArray(state.aprobadas_cpc) ? state.aprobadas_cpc.map(Number) : [];
+    state.aprobadas_cpo = Array.isArray(state.aprobadas_cpo) ? state.aprobadas_cpo.map(Number) : [];
+    return state;
+  }
+
+  function byInstancia(id) {
+    return MAT_SHEET.filter(m => Number(m.instancia_id) === Number(id));
+  }
+
+  function renderSelectOptions(selectEl, items) {
+    selectEl.innerHTML = items.map(m => `<option value="${m.materia_id}">${esc(m.materia)}</option>`).join("");
+  }
+
+  function selectedValues(selectEl) {
+    return Array.from(selectEl.selectedOptions).map(o => Number(o.value));
+  }
+
+  function moveSelected(srcSel, dstSel) {
+    const srcVals = new Set(selectedValues(srcSel));
+    if (!srcVals.size) return;
+    const dstVals = new Set(Array.from(dstSel.options).map(o => Number(o.value)));
+
+    // mover manteniendo orden por nombre
+    for (const o of Array.from(srcSel.options)) {
+      const val = Number(o.value);
+      if (srcVals.has(val)) {
+        dstVals.add(val);
+        srcSel.removeChild(o);
+      }
+    }
+
+    // reconstruir dst ordenado por label
+    const dstMap = new Map();
+    for (const o of Array.from(dstSel.options)) dstMap.set(Number(o.value), o.textContent);
+    for (const val of dstVals) {
+      if (!dstMap.has(val)) {
+        // buscar label en MAT_SHEET
+        const m = MAT_SHEET.find(x => Number(x.materia_id) === val);
+        dstMap.set(val, m ? m.materia : String(val));
+      }
+    }
+    const dstItems = Array.from(dstMap.entries()).map(([materia_id, materia]) => ({ materia_id, materia }))
+      .sort((a,b) => a.materia.localeCompare(b.materia, 'es'));
+    renderSelectOptions(dstSel, dstItems);
+
+    // reconstruir src también por label
+    const srcItems = Array.from(srcSel.options).map(o => ({ materia_id: Number(o.value), materia: o.textContent }))
+      .sort((a,b)=>a.materia.localeCompare(b.materia,'es'));
+    renderSelectOptions(srcSel, srcItems);
+  }
+
+  function wireDualList(instanceId, pendingId, approvedId, toApprovedBtnId, toPendingBtnId, stateKey) {
+    const pendingSel = document.getElementById(pendingId);
+    const approvedSel = document.getElementById(approvedId);
+
+    const all = byInstancia(instanceId);
+    const approvedIds = new Set((loadState()[stateKey] || []).map(Number));
+    const approved = all.filter(m => approvedIds.has(Number(m.materia_id))).sort((a,b)=>a.materia.localeCompare(b.materia,'es'));
+    const pending = all.filter(m => !approvedIds.has(Number(m.materia_id))).sort((a,b)=>a.materia.localeCompare(b.materia,'es'));
+
+    renderSelectOptions(pendingSel, pending);
+    renderSelectOptions(approvedSel, approved);
+
+    document.getElementById(toApprovedBtnId).onclick = () => moveSelected(pendingSel, approvedSel);
+    document.getElementById(toPendingBtnId).onclick = () => moveSelected(approvedSel, pendingSel);
+
+    // doble click
+    pendingSel.ondblclick = () => moveSelected(pendingSel, approvedSel);
+    approvedSel.ondblclick = () => moveSelected(approvedSel, pendingSel);
+  }
+
+  function readDualListsIntoState(state) {
+    state.aprobadas_cpc = Array.from(document.getElementById("cpc_approved").options).map(o => Number(o.value));
+    state.aprobadas_cpo = Array.from(document.getElementById("cpo_approved").options).map(o => Number(o.value));
+    // derivadas para reglas/panel
+    state.blancas = state.aprobadas_cpc.length;
+    state.negritas = state.aprobadas_cpo.length;
+    return state;
+  }
 
   function evalMateriaEligibility(state, materia, approvedSet, plannedAreaSet) {
     const reasons = [];
@@ -240,6 +357,10 @@
   }
 
   function renderPanel(state) {
+    state = normalizeState(state);
+    // derivar contadores desde checklist CPC/CPO
+    state.blancas = (state.aprobadas_cpc || []).length;
+    state.negritas = (state.aprobadas_cpo || []).length;
     const approvedSet = new Set(state.aprobadas || []);
     const approvedPoints = (DB.catalog.puntos || []).filter(m => approvedSet.has(m.id)).reduce((a,m) => a + (m.points ?? pointsByType(m.type)), 0);
     const totalPts = (state.puntosPrevios || 0) + approvedPoints;
@@ -441,26 +562,49 @@
     const res = await fetch("./materias.json", { cache: "no-store" });
     DB = await res.json();
 
-    const state = loadState();
+    // Cargar materias desde Google Sheets
+    const rMat = await listMaterias();
+    if (!rMat.ok) throw new Error(rMat.error || "No pude listar materias desde Sheets");
+    MAT_SHEET = rMat.materias || [];
+
+    const state = normalizeState(loadState());
     renderSelectors(state);
     document.getElementById("plan").value = state.plan;
     document.getElementById("orientacion").value = state.orientacion;
-    document.getElementById("blancas").value = state.blancas;
-    document.getElementById("negritas").value = state.negritas;
     document.getElementById("puntosPrevios").value = state.puntosPrevios || 0;
+
+    // Inicializar dual lists CPC/CPO
+    wireDualList(2, "cpc_pending", "cpc_approved", "cpc_to_approved", "cpc_to_pending", "aprobadas_cpc");
+    wireDualList(3, "cpo_pending", "cpo_approved", "cpo_to_approved", "cpo_to_pending", "aprobadas_cpo");
 
     renderPanel(state);
     renderPlanBox();
     renderCatalog();
     wireSearch();
 
-    document.getElementById("save").addEventListener("click", () => {
-      const s = loadState();
+    document.getElementById("save").addEventListener("click", async () => {
+      const s = normalizeState(loadState());
       s.plan = document.getElementById("plan").value;
       s.orientacion = document.getElementById("orientacion").value;
-      s.blancas = Number(document.getElementById("blancas").value || 0);
-      s.negritas = Number(document.getElementById("negritas").value || 0);
       s.puntosPrevios = Number(document.getElementById("puntosPrevios").value || 0);
+      readDualListsIntoState(s);
+      saveState(s);
+
+      // Guardar progreso en Sheets (multi-dispositivo)
+      const sess = getSession();
+      if (sess?.usuario_id) {
+        const progreso = {
+          plan: s.plan,
+          orientacion: s.orientacion,
+          puntosPrevios: s.puntosPrevios,
+          aprobadas_cpc: s.aprobadas_cpc,
+          aprobadas_cpo: s.aprobadas_cpo,
+          aprobadas_puntos: s.aprobadas || []
+        };
+        const r = await saveProgress(Number(sess.usuario_id), progreso);
+        if (!r.ok) console.warn("save_progress:", r);
+      }
+
       saveState(s);
       renderSelectors(s);
       renderPanel(s);
@@ -496,8 +640,19 @@
     const p = document.getElementById("authPass").value;
     const r = await loginUser(u, p);
     if (!r.ok) return showAuth(r.error || "Login falló.");
-    setSession(u.trim());
+    setSession(u.trim(), r.usuario_id);
     showApp(u.trim());
+    // Cargar progreso desde Sheets (si existe) y guardarlo localmente
+    if (r.usuario_id) {
+      const rp = await loadProgress(Number(r.usuario_id));
+      if (rp.ok && rp.progreso) {
+        const local = normalizeState(loadState());
+        const merged = { ...local, ...rp.progreso };
+        // compat: nombres esperados por app
+        if (Array.isArray(merged.aprobadas_puntos)) merged.aprobadas = merged.aprobadas_puntos;
+        saveState(merged);
+      }
+    }
     await initApp();
   });
 
@@ -507,22 +662,46 @@
     const p = document.getElementById("authPass").value;
     const r = await registerUser(u, p);
     if (!r.ok) return showAuth(r.error || "Registro falló.");
-    setSession(u.trim());
+    setSession(u.trim(), r.usuario_id);
     showApp(u.trim());
+    // Cargar progreso desde Sheets (si existe) y guardarlo localmente
+    if (r.usuario_id) {
+      const rp = await loadProgress(Number(r.usuario_id));
+      if (rp.ok && rp.progreso) {
+        const local = normalizeState(loadState());
+        const merged = { ...local, ...rp.progreso };
+        // compat: nombres esperados por app
+        if (Array.isArray(merged.aprobadas_puntos)) merged.aprobadas = merged.aprobadas_puntos;
+        saveState(merged);
+      }
+    }
     await initApp();
   });
 
   (async function boot(){
     try {
       const s = getSession();
-      if (s?.username) { showApp(s.username); await initApp(); }
+      if (s?.username) {
+        showApp(s.username);
+        if (s.usuario_id) {
+          const rp = await loadProgress(Number(s.usuario_id));
+          if (rp.ok && rp.progreso) {
+            const local = normalizeState(loadState());
+            const merged = { ...local, ...rp.progreso };
+            if (Array.isArray(merged.aprobadas_puntos)) merged.aprobadas = merged.aprobadas_puntos;
+            saveState(merged);
+          }
+        }
+        await initApp();
+      }
       else { showAuth(""); }
     } catch (e) {
-      showAuth("Error iniciando la app. ¿Falta materias.json o auth.js?");
       console.error(e);
+      showError("Error iniciando la app: " + e.message);
     }
+
   })();
 </script>
-</div>
+  </div>
 </body>
 </html>
