@@ -1,5 +1,5 @@
 // auth.js — Registro/Login + datos usando Google Apps Script (Google Sheets)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySBMx7Ul20Q-EKvKdC4iWU880Wy6-8po5ExGV3ibSGNfDUHloLkTi2gXbqDee70KURzw/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhADhZ9i7hw7T44N9jbCbBOXwUnpN8XpMyL0wDdee7rzb_0vyOmebLy9xqh6qnoo9uYA/exec";
 
 // Reglas de password:
 // - mínimo 8
@@ -57,6 +57,10 @@ export async function loginUser(username, password) {
 
 export async function listMaterias() {
   return await postJson({ action:"list_materias" });
+}
+
+export async function listMateriaOrientacion() {
+  return await postJson({ action:"list_materia_orientacion" });
 }
 
 export async function loadProgress(usuario_id) {
