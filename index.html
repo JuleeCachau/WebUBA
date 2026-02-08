@@ -84,7 +84,7 @@
       <div class="muted small">Mové materias entre <b>Pendientes</b> y <b>Aprobadas</b>.</div>
 
       <div class="grid" style="margin-top:10px;">
-        <div class="card col9" style="padding:12px;">
+        <div class="card col12" style="padding:12px;">
           <b>CPC</b>
           <div class="grid" style="grid-template-columns: 1fr auto 1fr; gap: 10px; margin-top:10px; align-items:center;">
             <div>
@@ -104,7 +104,7 @@
       </div>
 
       <div class="grid" style="margin-button:10px;">
-        <div class="card col9" style="padding:12px;">
+        <div class="card col12" style="padding:12px;">
           <b>CPO</b>
           <div class="grid" style="grid-template-columns: 1fr auto 1fr; gap: 10px; margin-top:10px; align-items:center;">
             <div>
@@ -393,8 +393,11 @@
     document.getElementById("rulesBox").innerHTML = `
       <b>Reglas base:</b>
       <div class="small muted">
-        Mensual=${DB.rules.points.mensual}, Bimestral=${DB.rules.points.bimestral}, Cuatrimestral=${DB.rules.points.cuatrimestral}.<br>
-        Límite cuatrimestre: ${DB.rules.limits.max_points_per_cuatrimestre} pts. Límite bimestre: ${DB.rules.limits.max_points_per_bimestre} pts.
+        Mensual=${DB.rules.points.mensual},
+        Bimestral=${DB.rules.points.bimestral},
+        Cuatrimestral=${DB.rules.points.cuatrimestral}.<br>
+        Límite cuatrimestre: ${DB.rules.limits.max_points_per_cuatrimestre} 
+        pts. Límite bimestre: ${DB.rules.limits.max_points_per_bimestre} pts.
       </div>
     `;
   }
